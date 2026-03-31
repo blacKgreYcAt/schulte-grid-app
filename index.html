@@ -738,6 +738,10 @@ function showCompletion() {
 
 function nextTask() {
   const config = difficultyConfig[gameState.currentDifficulty];
+  if (!config) {
+    goHome();
+    return;
+  }
   if (gameState.currentTask < config.taskCount) {
     startDifficulty(gameState.currentDifficulty, gameState.currentTask + 1);
   } else {
@@ -802,13 +806,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   updateAllProgress();
-
-  // Add timer update to completion flow
-  const originalShowCompletion = showCompletion;
-  window.showCompletion = function() {
-    markTaskComplete();
-    originalShowCompletion.call(this);
-  };
 });
 
 window.addEventListener('beforeunload', () => {
