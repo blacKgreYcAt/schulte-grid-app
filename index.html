@@ -618,10 +618,49 @@ function getDifficultyName(d) {
 
 // ════ GAME LOGIC ════
 function generateGrid() {
-  gameState.grid = Array.from(
+  const numbers = Array.from(
     { length: gameState.totalNumbers },
     (_, i) => i + 1
-  ).sort(() => Math.random() - 0.5);
+  );
+
+  // Check if this is distraction mode
+  const config = difficultyConfig[gameState.currentDifficulty];
+  if (config.hasInterference) {
+    // Add interference elements (letters and random numbers)
+    const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+    const totalCells = gameState.gridSize * gameState.gridSize;
+
+    // Create interference elements
+    const interferences = [];
+    for (let i = 0; i < letters.length; i++) {
+      interferences.push(letters[i]);
+    }
+
+    // Randomly insert interferences among numbers
+    const combined = [];
+    let numIndex = 0;
+    let intIndex = 0;
+
+    for (let i = 0; i < totalCells; i++) {
+      if (numIndex < numbers.length && (intIndex >= interferences.length || Math.random() > 0.4)) {
+        combined.push(numbers[numIndex++]);
+      } else if (intIndex < interferences.length) {
+        combined.push(interferences[intIndex++]);
+      }
+    }
+
+    // Ensure all numbers are included
+    while (numIndex < numbers.length) {
+      const randomPos = Math.floor(Math.random() * combined.length);
+      if (typeof combined[randomPos] !== 'number') {
+        combined[randomPos] = numbers[numIndex++];
+      }
+    }
+
+    gameState.grid = combined.sort(() => Math.random() - 0.5);
+  } else {
+    gameState.grid = numbers.sort(() => Math.random() - 0.5);
+  }
 }
 
 function renderGrid() {
@@ -629,13 +668,25 @@ function renderGrid() {
   gridEl.innerHTML = '';
   gridEl.style.gridTemplateColumns = `repeat(${gameState.gridSize}, 1fr)`;
 
-  gameState.grid.forEach((num, idx) => {
+  gameState.grid.forEach((content, idx) => {
     const cell = document.createElement('div');
     cell.className = 'grid-cell';
-    cell.textContent = num;
-    cell.dataset.number = num;
+
+    // Check if content is a number or letter
+    const isNumber = typeof content === 'number';
+    cell.textContent = content;
     cell.dataset.idx = idx;
-    cell.onclick = () => handleCellClick(idx, num);
+
+    if (isNumber) {
+      cell.dataset.number = content;
+      cell.onclick = () => handleCellClick(idx, content);
+    } else {
+      // Interference element - make it non-clickable but styled differently
+      cell.style.color = 'rgba(136, 122, 154, 0.6)';
+      cell.style.fontStyle = 'italic';
+      cell.style.cursor = 'default';
+    }
+
     gridEl.appendChild(cell);
   });
 }
